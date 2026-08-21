@@ -2,7 +2,7 @@ import os
 import re
 import shutil
 import threading
-from flask import Flask, send_file, request, jsonify
+from flask import Flask, render_template, send_file, request, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 import yt_dlp
@@ -10,6 +10,10 @@ import yt_dlp
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 CORS(app)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
