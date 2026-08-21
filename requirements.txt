@@ -1,9 +1,6 @@
 flask
 flask-cors
 flask-socketio
+eventlet
 yt-dlp
-gunicorn
-eventlet
-ffmpeg-python
-eventlet
 imageio-ffmpeg
