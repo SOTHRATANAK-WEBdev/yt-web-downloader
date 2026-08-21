@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberStream - Pro Media Downloader</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 24, 38, 0.75);
+      --border: rgba(255, 255, 255, 0.08);
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.35);
+      --accent: #10b981;
+      --accent-glow: rgba(16, 185, 129, 0.2);
+      --text: #f8fafc;
+      --text-dim: #64748b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.12) 0px, transparent 50%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .container {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      width: 100%;
+      max-width: 520px;
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      box-shadow: 0 8px 16px var(--primary-glow);
+    }
+
+    .brand-text h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.5px; }
+    .brand-text p { font-size: 0.8rem; color: var(--text-dim); }
+
+    .search-box {
+      display: flex;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      padding: 6px;
+      border-radius: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px var(--primary-glow);
+    }
+
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 12px 16px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .search-box button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 0 20px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .search-box button:hover { opacity: 0.9; transform: scale(0.98); }
+    .search-box button:disabled { background: #334155; cursor: not-allowed; transform: none; }
+
+    /* Searching Animation State */
+    .searching-card {
+      display: none;
+      margin-top: 24px;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 16px;
+      text-align: center;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .spinner-box {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      color: var(--primary);
+      font-size: 1.2rem;
+    }
+
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 3px solid rgba(59, 130, 246, 0.2);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .searching-card p {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    /* Video Card Preview */
+    .preview-card {
+      display: none;
+      margin-top: 24px;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .preview-body {
+      display: flex;
+      gap: 16px;
+    }
+
+    .preview-thumb {
+      width: 120px;
+      height: 70px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+    }
+
+    .preview-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .preview-info h4 {
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .preview-info p { font-size: 0.78rem; color: var(--text-dim); }
+
+    /* Options Selector */
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .opt-btn {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 10px 0;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .opt-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+
+    /* Action Download Button */
+    .dl-action-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 20px var(--accent-glow);
+      transition: all 0.2s;
+    }
+
+    .dl-action-btn:hover { transform: translateY(-1px); opacity: 0.95; }
+    .dl-action-btn:disabled { background: #334155; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* Progress Overlay */
+    .progress-section {
+      display: none;
+      margin-top: 20px;
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.825rem;
+      margin-bottom: 8px;
+    }
+
+    .progress-bar-bg {
+      height: 8px;
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 99px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3b82f6, #10b981);
+      transition: width 0.2s ease;
+    }
+
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="brand">
+      <div class="brand-icon"><i class="fa-solid fa-bolt"></i></div>
+      <div class="brand-text">
+        <h1>Media Stream Pro</h1>
+        <p>High-speed YouTube Video Converter</p>
+      </div>
+    </div>
+
+    <div class="search-box">
+      <input type="text" id="videoUrl" placeholder="Paste YouTube link here..." autocomplete="off">
+      <button id="searchBtn" onclick="fetchMetadata()"><i class="fa-solid fa-magnifying-glass"></i></button>
+    </div>
+
+    <!-- Searching Animation State -->
+    <div class="searching-card" id="searchingCard">
+      <div class="spinner-box">
+        <div class="spinner"></div>
+      </div>
+      <p>Searching for the video link...</p>
+    </div>
+
+    <!-- Preview Card -->
+    <div class="preview-card" id="previewCard">
+      <div class="preview-body">
+        <img id="thumbImg" class="preview-thumb" src="" alt="Thumbnail">
+        <div class="preview-info">
+          <h4 id="videoTitle">Video Title...</h4>
+          <p id="channelName"><i class="fa-solid fa-user-ninja"></i> Channel</p>
+          <p id="videoDuration"><i class="fa-regular fa-clock"></i> 00:00</p>
+        </div>
+      </div>
+
+      <div class="options-grid">
+        <button class="opt-btn active" onclick="selectQuality(this, 'best')">Best MP4</button>
+        <button class="opt-btn" onclick="selectQuality(this, '1080')">1080p</button>
+        <button class="opt-btn" onclick="selectQuality(this, '720')">720p</button>
+      </div>
+
+      <button id="dlBtn" class="dl-action-btn" onclick="startDownload()">
+        <i class="fa-solid fa-download"></i> Start Download
+      </button>
+
+      <div class="progress-section" id="progressSection">
+        <div class="progress-meta">
+          <span id="stageLabel" style="color: var(--text-dim);">Downloading...</span>
+          <span id="percentLabel" style="font-weight: bold; color: var(--primary);">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <div class="stats-row">
+          <span id="mbDetails">0 MB / 0 MB</span>
+          <span id="speedBadge" style="color: var(--accent);"><i class="fa-solid fa-gauge-high"></i> 0 MB/s</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Detects local file context or local development server
+    const isLocal = window.location.hostname === '127.0.0.1' ||
+                    window.location.hostname === 'localhost' ||
+                    window.location.protocol === 'file:';
+
+    const BACKEND_URL = isLocal
+      ? 'http://127.0.0.1:5000'
+      : 'https://yt-web-downloader.onrender.com';
+
+    const socket = io(BACKEND_URL);
+    let selectedQuality = 'best';
+    let maxPercent = 0;
+    let currentFile = '';
+
+    const videoInput = document.getElementById('videoUrl');
+    const searchBtn = document.getElementById('searchBtn');
+    const searchingCard = document.getElementById('searchingCard');
+    const previewCard = document.getElementById('previewCard');
+    const progressSection = document.getElementById('progressSection');
+    const btn = document.getElementById('dlBtn');
+
+    videoInput.addEventListener('input', () => {
+      resetToNormal(true);
+    });
+
+    function selectQuality(btnElement, quality) {
+      document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+      btnElement.classList.add('active');
+      selectedQuality = quality;
+    }
+
+    async function fetchMetadata() {
+      const url = videoInput.value.trim();
+      if (!url) return alert('Please enter a YouTube link');
+
+      searchingCard.style.display = 'block';
+      previewCard.style.display = 'none';
+      searchBtn.disabled = true;
+      searchBtn.innerHTML = `<div class="spinner" style="width:14px; height:14px; border-width:2px;"></div>`;
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/fetch-info`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ url: url })
+        });
+        const data = await res.json();
+
+        searchingCard.style.display = 'none';
+        searchBtn.disabled = false;
+        searchBtn.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i>`;
+
+        if (data.error) return alert(data.error);
+
+        document.getElementById('thumbImg').src = data.thumbnail;
+        document.getElementById('videoTitle').innerText = data.title;
+        document.getElementById('channelName').innerHTML = `<i class="fa-solid fa-user"></i> ${data.uploader}`;
+        document.getElementById('videoDuration').innerHTML = `<i class="fa-regular fa-clock"></i> ${data.duration}`;
+
+        previewCard.style.display = 'block';
+        progressSection.style.display = 'none';
+      } catch (err) {
+        searchingCard.style.display = 'none';
+        searchBtn.disabled = false;
+        searchBtn.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i>`;
+        alert('Failed to connect or fetch video details');
+      }
+    }
+
+    function startDownload() {
+      const url = videoInput.value.trim();
+      if (!url) return;
+
+      maxPercent = 0;
+      currentFile = '';
+      btn.disabled = true;
+      btn.innerText = "Processing...";
+      progressSection.style.display = "block";
+
+      socket.emit('start_download', { url: url, quality: selectedQuality });
+    }
+
+    function resetToNormal(keepInputText = false) {
+      if (!keepInputText) {
+        videoInput.value = '';
+      }
+      maxPercent = 0;
+      currentFile = '';
+      searchingCard.style.display = 'none';
+      previewCard.style.display = 'none';
+      progressSection.style.display = 'none';
+
+      searchBtn.disabled = false;
+      searchBtn.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i>`;
+
+      document.getElementById('progressFill').style.width = "0%";
+      document.getElementById('percentLabel').innerText = "0%";
+      document.getElementById('stageLabel').innerText = "Downloading...";
+      document.getElementById('stageLabel').style.color = "var(--text-dim)";
+      document.getElementById('mbDetails').innerText = "0 MB / 0 MB";
+      document.getElementById('speedBadge').innerHTML = `<i class="fa-solid fa-gauge-high"></i> 0 MB/s`;
+
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-download"></i> Start Download`;
+
+      const defaultOpt = document.querySelector('.opt-btn');
+      if (defaultOpt) selectQuality(defaultOpt, 'best');
+    }
+
+    socket.on('progress', (data) => {
+      // Reset maxPercent when switching between audio and video streams
+      if (data.filename && data.filename !== currentFile) {
+        currentFile = data.filename;
+        maxPercent = 0;
+      }
+
+      let currentPercent = parseFloat(data.percent) || 0;
+
+      if (currentPercent >= maxPercent) {
+        maxPercent = currentPercent;
+        const displayVal = Math.round(maxPercent);
+
+        document.getElementById('stageLabel').innerText = data.stage || "Downloading...";
+        document.getElementById('progressFill').style.width = displayVal + "%";
+        document.getElementById('percentLabel').innerText = displayVal + "%";
+      }
+
+      if (data.downloaded_mb > 0) {
+        document.getElementById('mbDetails').innerText = `${data.downloaded_mb} MB / ${data.total_mb} MB`;
+      }
+      if (data.speed) {
+        document.getElementById('speedBadge').innerHTML = `<i class="fa-solid fa-gauge-high"></i> ${data.speed}`;
+      }
+    });
+
+    socket.on('download_complete', (data) => {
+      document.getElementById('stageLabel').innerText = "Complete!";
+      document.getElementById('stageLabel').style.color = "var(--accent)";
+      document.getElementById('progressFill').style.width = "100%";
+      document.getElementById('percentLabel').innerText = "100%";
+
+      // Trigger automatic file download
+      window.location.href = `${BACKEND_URL}${data.file_url}`;
+
+      setTimeout(() => {
+        resetToNormal(false);
+      }, 3000);
+    });
+
+    socket.on('download_error', (data) => {
+      document.getElementById('stageLabel').innerText = "Error: " + data.error;
+      document.getElementById('stageLabel').style.color = "#ef4444";
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-download"></i> Start Download`;
+    });
+  </script>
+</body>
+</html>
