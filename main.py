@@ -17,6 +17,9 @@ def index():
 
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
+# Check if Render Secret File exists
+cookie_path = '/etc/secrets/cookies.txt' if os.path.exists('/etc/secrets/cookies.txt') else None
+
 # 1. Dynamic FFmpeg Detection
 try:
     import imageio_ffmpeg
@@ -49,6 +52,7 @@ def fetch_info():
         ydl_opts = {
             'quiet': True,
             'skip_download': True,
+            'cookiefile': cookie_path,
             'extractor_args': {'youtube': {'player_client': ['web_safari', 'web']}}
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -115,6 +119,7 @@ def run_download_task(video_url, quality):
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
         'progress_hooks': [yt_progress_hook],
         'quiet': True,
+        'cookiefile': cookie_path,
         'extractor_args': {'youtube': {'player_client': ['web_safari', 'web']}}
     }
 
