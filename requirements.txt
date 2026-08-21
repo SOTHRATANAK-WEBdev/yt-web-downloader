@@ -4,3 +4,4 @@ flask-socketio
 eventlet
 yt-dlp
 imageio-ffmpeg
+gunicorn
