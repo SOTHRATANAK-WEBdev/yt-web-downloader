@@ -5,3 +5,4 @@ yt-dlp
 gunicorn
 eventlet
 ffmpeg-python
+eventlet
