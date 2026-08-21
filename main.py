@@ -53,7 +53,7 @@ def fetch_info():
             'quiet': True,
             'skip_download': True,
             'cookiefile': cookie_path,
-            'extractor_args': {'youtube': {'player_client': ['web_safari', 'web']}}
+            'extractor_args': {'youtube': {'player_client': ['android', 'web']}}
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
@@ -120,7 +120,7 @@ def run_download_task(video_url, quality):
         'progress_hooks': [yt_progress_hook],
         'quiet': True,
         'cookiefile': cookie_path,
-        'extractor_args': {'youtube': {'player_client': ['web_safari', 'web']}}
+        'extractor_args': {'youtube': {'player_client': ['android', 'web']}}
     }
 
     try:
