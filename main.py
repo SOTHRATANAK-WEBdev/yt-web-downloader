@@ -17,16 +17,20 @@ def index():
 
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
-# 1. Dynamic FFmpeg Detection (Uses Linux system PATH on cloud hosts, falls back to local Windows path)
-ffmpeg_dir = shutil.which('ffmpeg')
-if not ffmpeg_dir:
-    local_appdata = os.environ.get('LOCALAPPDATA', '')
-    ffmpeg_dir = os.path.join(
-        local_appdata,
-        'Microsoft', 'WinGet', 'Packages',
-        'Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe',
-        'ffmpeg-9.0-full_build', 'bin'
-    )
+# 1. Dynamic FFmpeg Detection
+try:
+    import imageio_ffmpeg
+    ffmpeg_dir = imageio_ffmpeg.get_ffmpeg_exe()
+except Exception:
+    ffmpeg_dir = shutil.which('ffmpeg')
+    if not ffmpeg_dir:
+        local_appdata = os.environ.get('LOCALAPPDATA', '')
+        ffmpeg_dir = os.path.join(
+            local_appdata,
+            'Microsoft', 'WinGet', 'Packages',
+            'Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe',
+            'ffmpeg-9.0-full_build', 'bin'
+        )
 
 DOWNLOAD_FOLDER = os.path.join(os.getcwd(), 'downloads')
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
