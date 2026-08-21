@@ -46,7 +46,11 @@ def fetch_info():
         return jsonify({'error': 'URL required'}), 400
 
     try:
-        ydl_opts = {'quiet': True, 'skip_download': True}
+        ydl_opts = {
+            'quiet': True,
+            'skip_download': True,
+            'extractor_args': {'youtube': {'player_client': ['web_safari', 'web']}}
+        }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
 
@@ -110,7 +114,8 @@ def run_download_task(video_url, quality):
         'ffmpeg_location': ffmpeg_dir,
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
         'progress_hooks': [yt_progress_hook],
-        'quiet': True
+        'quiet': True,
+        'extractor_args': {'youtube': {'player_client': ['web_safari', 'web']}}
     }
 
     try:
